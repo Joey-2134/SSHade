@@ -24,21 +24,37 @@ const (
 
 //go:embed banner.txt
 var banner string
+var users = map[string]string{
+	// You can add add your name and public key here :)
+	"notjoey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIst2WyjFbYpwCoyDwKNe46cLYIoh76ZBq1Q5zvuLb74 joey@Joeys-MacBook-Air.local",
+}
 
 func main() {
 	srv, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
-        wish.WithBannerHandler(func(ctx ssh.Context) string {
+		wish.WithBannerHandler(func(ctx ssh.Context) string {
 			return fmt.Sprintf(banner, ctx.User())
 		}),
-		wish.WithPasswordAuth(func(ctx ssh.Context, password string) bool {
-			return password == "123"
+		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
+			return true
 		}),
 		wish.WithMiddleware(
 			func(next ssh.Handler) ssh.Handler {
 				return func(sess ssh.Session) {
-					wish.Println(sess, fmt.Sprintf("Hello, %s!", sess.User()))
+					// if the current session's user public key is one of the
+					// known users, we greet them and return.
+					for name, pubkey := range users {
+						parsed, _, _, _, _ := ssh.ParseAuthorizedKey(
+							[]byte(pubkey),
+						)
+						if ssh.KeysEqual(sess.PublicKey(), parsed) {
+							wish.Println(sess, fmt.Sprintf("Hey %s!\n", name))
+							next(sess)
+							return
+						}
+					}
+					wish.Println(sess, "Hey, I don't know who you are!")
 					next(sess)
 				}
 			},
