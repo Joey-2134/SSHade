@@ -1,4 +1,4 @@
-# SSH Pixel Canvas - Project Brief
+# SSHade - Project Brief
 
 ## Concept
 
