@@ -11,10 +11,8 @@ import (
 )
 
 const (
-	CanvasWidth       = 20
-	CanvasHeight      = 20
-	MinTerminalWidth  = 80
-	MinTerminalHeight = 40 // height must be at least width/2 for 2:1 canvas
+	CanvasWidth  = 20
+	CanvasHeight = 20
 )
 
 type Model struct {
@@ -70,6 +68,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keyMap.Quit):
 			return m, tea.Quit
 		}
+
+		// Wrap cursor around canvas edges
+		m.cursor.X = ((m.cursor.X % CanvasWidth) + CanvasWidth) % CanvasWidth
+		m.cursor.Y = ((m.cursor.Y % CanvasHeight) + CanvasHeight) % CanvasHeight
 	default:
 		return m, nil
 	}
