@@ -80,19 +80,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	var b strings.Builder
+	// Scale to fit: limit cell size by both width and height so grid fits and cells stay square (2:1 line-to-column aspect).
+	scaleByWidth := m.width / CanvasWidth
+	scaleByHeight := 2 * (m.height / CanvasHeight) // 2 cols per line for square cells
+	cellWidth := max(min(scaleByWidth, scaleByHeight), 1)
+	linesPerRow := max(cellWidth/2, 1)
+
 	for y := range CanvasHeight {
-		for x := range CanvasWidth {
-			if m.cursor.X == x && m.cursor.Y == y {
-				style := m.renderer.NewStyle().Background(lipgloss.Color("241")).SetString("  ")
-				b.WriteString(style.String())
-			} else {
-				style := m.renderer.NewStyle().Background(lipgloss.Color(m.canvas[y][x])).SetString("  ")
-				b.WriteString(style.String())
+		for range linesPerRow {
+			for x := range CanvasWidth {
+				if m.cursor.X == x && m.cursor.Y == y {
+					style := m.renderer.NewStyle().Background(lipgloss.Color("241")).SetString(strings.Repeat(" ", cellWidth))
+					b.WriteString(style.String())
+				} else {
+					style := m.renderer.NewStyle().Background(lipgloss.Color(m.canvas[y][x])).SetString(strings.Repeat(" ", cellWidth))
+					b.WriteString(style.String())
+				}
 			}
+			b.WriteString("\n")
 		}
-		b.WriteString("\n")
 	}
-	b.WriteString(m.renderer.NewStyle().Foreground(lipgloss.Color("241")).SetString("Press 'q' to quit").String())
 	return b.String()
 }
 
