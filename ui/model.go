@@ -99,6 +99,9 @@ func (m Model) View() string {
 	cellWidth := max(min(scaleByWidth, scaleByHeight), 1)
 	linesPerRow := max(cellWidth/2, 1)
 
+	leftPad := (m.width - CanvasWidth*cellWidth) / 2
+	topLines := (m.height - CanvasHeight*linesPerRow) / 2
+
 	for y := range CanvasHeight {
 		for range linesPerRow {
 			for x := range CanvasWidth {
@@ -113,7 +116,12 @@ func (m Model) View() string {
 			b.WriteString("\n")
 		}
 	}
-	return b.String()
+	gridStr := b.String() // after your existing loops
+	styled := m.renderer.NewStyle().
+		PaddingLeft(max(leftPad, 0)).
+		PaddingTop(max(topLines, 0)).
+		Render(gridStr)
+	return styled
 }
 
 type KeyMap struct {
