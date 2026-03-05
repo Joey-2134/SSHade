@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -11,8 +12,10 @@ import (
 )
 
 const (
-	CanvasWidth  = 20
-	CanvasHeight = 20
+	CanvasWidth       = 20
+	CanvasHeight      = 20
+	MinTerminalWidth  = 50
+	MinTerminalHeight = 25
 )
 
 type Model struct {
@@ -55,6 +58,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
+		if m.width < MinTerminalWidth || m.height < MinTerminalHeight {
+			m.isTooSmall = true
+		} else {
+			m.isTooSmall = false
+		}
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.Up):
@@ -80,6 +88,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	var b strings.Builder
+
+	if m.isTooSmall {
+		return fmt.Sprintf("Terminal too small.\nPlease resize to at least %dx%d.\n\nPress Q to quit.", MinTerminalWidth, MinTerminalHeight)
+	}
+
 	// Scale to fit: limit cell size by both width and height so grid fits and cells stay square (2:1 line-to-column aspect).
 	scaleByWidth := m.width / CanvasWidth
 	scaleByHeight := 2 * (m.height / CanvasHeight) // 2 cols per line for square cells
