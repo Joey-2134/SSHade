@@ -22,3 +22,13 @@ func GetUserByFingerprint(db *sql.DB, fingerprint string) (*User, error) {
 	}
 	return &user, nil
 }
+
+func CreateUser(db *sql.DB, username string, fingerprint string) (*User, error) {
+	stmt, err := db.Prepare("INSERT INTO users (username, ssh_key_fingerprint) VALUES (?, ?)")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(username, fingerprint)
+	return &User{Username: username, Fingerprint: fingerprint}, nil
+}

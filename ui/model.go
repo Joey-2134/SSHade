@@ -191,6 +191,7 @@ type KeyMap struct {
 	Right key.Binding
 	Place key.Binding
 	Quit  key.Binding
+	Enter key.Binding
 }
 
 var DefaultKeyMap = KeyMap{
@@ -211,12 +212,16 @@ var DefaultKeyMap = KeyMap{
 		key.WithHelp("→/d", "move right"),
 	),
 	Place: key.NewBinding(
-		key.WithKeys("enter", " "),
-		key.WithHelp("enter/space", "place pixel"),
+		key.WithKeys(" "),
+		key.WithHelp("space", "place pixel"),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "quit"),
 		key.WithHelp("q", "quit"),
+	),
+	Enter: key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("enter", "enter"),
 	),
 }
 
