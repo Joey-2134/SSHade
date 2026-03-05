@@ -11,8 +11,10 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish/bubbletea"
+	gocrypto "golang.org/x/crypto/ssh"
 
 	"github.com/Joey-2134/SSHade/canvas"
+	"github.com/Joey-2134/SSHade/db"
 )
 
 const (
@@ -40,13 +42,26 @@ type Model struct {
 	cursor         Cursor
 	canvasUpdateCh <-chan canvas.Pixel
 	unsub          func()
+	user           *db.User
 }
 
 func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Broadcaster) (tea.Model, []tea.ProgramOption) {
 	pty, _, _ := s.Pty()
 	renderer := bubbletea.MakeRenderer(s)
-	canvasUpdateCh, unsub := bc.Subscribe()
+	opts := []tea.ProgramOption{tea.WithAltScreen()}
 
+	fingerprint := ""
+	if pk := s.PublicKey(); pk != nil {
+		fingerprint = gocrypto.FingerprintSHA256(pk)
+	}
+
+	user, err := db.GetUserByFingerprint(database, fingerprint)
+	if err != nil || user == nil {
+		// New user → show username creation screen
+		return UserCreationModelHandler(s, database, fingerprint, c, bc), opts
+	}
+
+	canvasUpdateCh, unsub := bc.Subscribe()
 	m := Model{
 		width:          pty.Window.Width,
 		height:         pty.Window.Height,
@@ -57,8 +72,9 @@ func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Br
 		cursor:         DefaultCursor,
 		canvasUpdateCh: canvasUpdateCh,
 		unsub:          unsub,
+		user:           user,
 	}
-	return m, []tea.ProgramOption{tea.WithAltScreen()}
+	return m, opts
 }
 
 func waitForCanvasUpdate(ch <-chan canvas.Pixel) tea.Cmd {

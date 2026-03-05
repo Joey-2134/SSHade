@@ -54,7 +54,7 @@ func main() {
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithBannerHandler(func(ctx ssh.Context) string {
-			return fmt.Sprintf(banner, ctx.User())
+			return fmt.Sprint(banner)
 		}),
 		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
 			return true
