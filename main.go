@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
@@ -18,6 +19,8 @@ import (
 	"github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
 
+	"github.com/Joey-2134/SSHade/canvas"
+	"github.com/Joey-2134/SSHade/db"
 	"github.com/Joey-2134/SSHade/ui"
 )
 
@@ -34,6 +37,17 @@ var users = map[string]string{
 }
 
 func main() {
+	database, err := db.Open(db.DefaultPath)
+	if err != nil {
+		log.Fatal("Failed to open database", "error", err)
+	}
+	defer database.Close()
+
+	c := canvas.New(ui.CanvasWidth, ui.CanvasHeight)
+	if err := c.LoadFromDB(context.Background(), database); err != nil {
+		log.Fatal("Failed to load canvas from DB", "error", err)
+	}
+
 	srv, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
@@ -61,7 +75,9 @@ func main() {
 				}
 			},
 			logging.Middleware(),
-			bubbletea.Middleware(ui.TeaHandler),
+			bubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
+				return ui.TeaHandler(sess, c, database)
+			}),
 			activeterm.Middleware(),
 		),
 	)

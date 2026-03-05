@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -9,6 +11,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish/bubbletea"
+
+	"github.com/Joey-2134/SSHade/canvas"
 )
 
 const (
@@ -18,33 +22,34 @@ const (
 	MinTerminalHeight = 25
 )
 
+// DefaultPlaceColour is used when placing a pixel (Phase 1; no faction yet).
+const DefaultPlaceColour = "#ff6b6b"
+
+// defaultCellColour is used when the shared canvas is not available (e.g. before wiring).
+const defaultCellColour = "#cccccc"
+
 type Model struct {
 	width      int
 	height     int
 	isTooSmall bool
 	renderer   *lipgloss.Renderer
 	keyMap     KeyMap
-	canvas     [CanvasHeight][CanvasWidth]string
+	canvasRef  *canvas.Canvas
+	db         *sql.DB
 	cursor     Cursor
 }
 
-func TeaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB) (tea.Model, []tea.ProgramOption) {
 	pty, _, _ := s.Pty()
 	renderer := bubbletea.MakeRenderer(s)
 	m := Model{
-		width:    pty.Window.Width,
-		height:   pty.Window.Height,
-		renderer: renderer,
-		keyMap:   DefaultKeyMap,
-		cursor:   DefaultCursor,
-	}
-
-	//	load in colors to cells initially
-	colours := []string{"#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"}
-	for y := range CanvasHeight {
-		for x := range CanvasWidth {
-			m.canvas[y][x] = colours[(x+y)%len(colours)]
-		}
+		width:     pty.Window.Width,
+		height:    pty.Window.Height,
+		renderer:  renderer,
+		keyMap:    DefaultKeyMap,
+		canvasRef: c,
+		db:        database,
+		cursor:    DefaultCursor,
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
@@ -73,13 +78,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.cursor.X--
 		case key.Matches(msg, m.keyMap.Right):
 			m.cursor.X++
+		case key.Matches(msg, m.keyMap.Place):
+			if m.canvasRef != nil && m.db != nil {
+				_ = m.canvasRef.Set(context.Background(), m.db, m.cursor.X, m.cursor.Y, DefaultPlaceColour)
+			}
 		case key.Matches(msg, m.keyMap.Quit):
 			return m, tea.Quit
 		}
 
 		// Wrap cursor around canvas edges
-		m.cursor.X = ((m.cursor.X % CanvasWidth) + CanvasWidth) % CanvasWidth
-		m.cursor.Y = ((m.cursor.Y % CanvasHeight) + CanvasHeight) % CanvasHeight
+		w, h := CanvasWidth, CanvasHeight
+		if m.canvasRef != nil {
+			w, h = m.canvasRef.Width(), m.canvasRef.Height()
+		}
+		m.cursor.X = ((m.cursor.X % w) + w) % w
+		m.cursor.Y = ((m.cursor.Y % h) + h) % h
 	default:
 		return m, nil
 	}
@@ -105,11 +118,17 @@ func (m Model) View() string {
 	for y := range CanvasHeight {
 		for range linesPerRow {
 			for x := range CanvasWidth {
+				colour := defaultCellColour
+				if m.canvasRef != nil {
+					if p, ok := m.canvasRef.PixelAt(x, y); ok {
+						colour = p.ColourHex
+					}
+				}
 				if m.cursor.X == x && m.cursor.Y == y {
 					style := m.renderer.NewStyle().Background(lipgloss.Color("241")).SetString(strings.Repeat(" ", cellWidth))
 					b.WriteString(style.String())
 				} else {
-					style := m.renderer.NewStyle().Background(lipgloss.Color(m.canvas[y][x])).SetString(strings.Repeat(" ", cellWidth))
+					style := m.renderer.NewStyle().Background(lipgloss.Color(colour)).SetString(strings.Repeat(" ", cellWidth))
 					b.WriteString(style.String())
 				}
 			}
@@ -129,6 +148,7 @@ type KeyMap struct {
 	Down  key.Binding
 	Left  key.Binding
 	Right key.Binding
+	Place key.Binding
 	Quit  key.Binding
 }
 
@@ -148,6 +168,10 @@ var DefaultKeyMap = KeyMap{
 	Right: key.NewBinding(
 		key.WithKeys("d", "right"),
 		key.WithHelp("→/d", "move right"),
+	),
+	Place: key.NewBinding(
+		key.WithKeys("enter", " "),
+		key.WithHelp("enter/space", "place pixel"),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "quit"),
