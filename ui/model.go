@@ -11,17 +11,20 @@ import (
 )
 
 const (
-	CanvasWidth  = 20
-	CanvasHeight = 10
+	CanvasWidth       = 20
+	CanvasHeight      = 20
+	MinTerminalWidth  = 80
+	MinTerminalHeight = 40 // height must be at least width/2 for 2:1 canvas
 )
 
 type Model struct {
-	width    int
-	height   int
-	renderer *lipgloss.Renderer
-	keyMap   KeyMap
-	canvas   [CanvasHeight][CanvasWidth]string
-	cursor   [][]int
+	width      int
+	height     int
+	isTooSmall bool
+	renderer   *lipgloss.Renderer
+	keyMap     KeyMap
+	canvas     [CanvasHeight][CanvasWidth]string
+	cursor     Cursor
 }
 
 func TeaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
@@ -32,12 +35,13 @@ func TeaHandler(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 		height:   pty.Window.Height,
 		renderer: renderer,
 		keyMap:   DefaultKeyMap,
-		cursor:   [][]int{{0, 0}},
+		cursor:   DefaultCursor,
 	}
 
+	//	load in colors to cells initially
 	colours := []string{"#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeaa7"}
-	for y := 0; y < CanvasHeight; y++ {
-		for x := 0; x < CanvasWidth; x++ {
+	for y := range CanvasHeight {
+		for x := range CanvasWidth {
 			m.canvas[y][x] = colours[(x+y)%len(colours)]
 		}
 	}
@@ -56,13 +60,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.Up):
-			m.cursor[0][1]--
+			m.cursor.Y--
 		case key.Matches(msg, m.keyMap.Down):
-			m.cursor[0][1]++
+			m.cursor.Y++
 		case key.Matches(msg, m.keyMap.Left):
-			m.cursor[0][0]--
+			m.cursor.X--
 		case key.Matches(msg, m.keyMap.Right):
-			m.cursor[0][0]++
+			m.cursor.X++
 		case key.Matches(msg, m.keyMap.Quit):
 			return m, tea.Quit
 		}
@@ -74,9 +78,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	var b strings.Builder
-	for y := 0; y < CanvasHeight; y++ {
-		for x := 0; x < CanvasWidth; x++ {
-			if m.cursor[0][0] == x && m.cursor[0][1] == y {
+	for y := range CanvasHeight {
+		for x := range CanvasWidth {
+			if m.cursor.X == x && m.cursor.Y == y {
 				style := m.renderer.NewStyle().Background(lipgloss.Color("241")).SetString("  ")
 				b.WriteString(style.String())
 			} else {
@@ -117,6 +121,18 @@ var DefaultKeyMap = KeyMap{
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("q", "quit"),
-		key.WithHelp("q", "quit the game"),
+		key.WithHelp("q", "quit"),
 	),
+}
+
+type Cursor struct {
+	X      int
+	Y      int
+	Colour string
+}
+
+var DefaultCursor = Cursor{
+	X:      0,
+	Y:      0,
+	Colour: "241",
 }
