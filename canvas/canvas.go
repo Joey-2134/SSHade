@@ -10,15 +10,14 @@ import (
 
 const defaultColour = "#cccccc"
 
-// Canvas is the shared in-memory grid of pixels, persisted to SQLite.
 type Canvas struct {
-	mu     sync.RWMutex
-	width  int
-	height int
-	Pixels [][]Pixel
+	mu          sync.RWMutex
+	width       int
+	height      int
+	Pixels      [][]Pixel
+	broadcaster *Broadcaster
 }
 
-// New allocates a canvas of the given dimensions and fills it with the default colour.
 func New(width, height int) *Canvas {
 	pixels := make([][]Pixel, height)
 	for y := range height {
@@ -63,6 +62,7 @@ func (c *Canvas) PixelAt(x, y int) (Pixel, bool) {
 
 // Set updates the pixel at (x, y) in memory and persists it via the database.
 // Returns an error if out of bounds or if the DB write fails.
+// If a broadcaster is set, all subscribers are notified after a successful write.
 func (c *Canvas) Set(ctx context.Context, database *sql.DB, x, y int, colourHex string) error {
 	if x < 0 || x >= c.width || y < 0 || y >= c.height {
 		return nil // skip out-of-bounds
@@ -70,11 +70,24 @@ func (c *Canvas) Set(ctx context.Context, database *sql.DB, x, y int, colourHex 
 	c.mu.Lock()
 	c.Pixels[y][x] = Pixel{X: x, Y: y, ColourHex: colourHex}
 	c.mu.Unlock()
-	return db.SetPixel(ctx, database, x, y, colourHex, nil, nil)
+	if err := db.SetPixel(ctx, database, x, y, colourHex, nil, nil); err != nil {
+		return err
+	}
+	c.mu.RLock()
+	bc := c.broadcaster
+	c.mu.RUnlock()
+	if bc != nil {
+		bc.Broadcast(Pixel{X: x, Y: y, ColourHex: colourHex})
+	}
+	return nil
 }
 
-// Width returns the canvas width.
+func (c *Canvas) SetBroadcaster(b *Broadcaster) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.broadcaster = b
+}
+
 func (c *Canvas) Width() int { return c.width }
 
-// Height returns the canvas height.
 func (c *Canvas) Height() int { return c.height }

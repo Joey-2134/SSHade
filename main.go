@@ -47,6 +47,8 @@ func main() {
 	if err := c.LoadFromDB(context.Background(), database); err != nil {
 		log.Fatal("Failed to load canvas from DB", "error", err)
 	}
+	broadcaster := canvas.NewBroadcaster()
+	c.SetBroadcaster(broadcaster)
 
 	srv, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
@@ -76,7 +78,7 @@ func main() {
 			},
 			logging.Middleware(),
 			bubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
-				return ui.TeaHandler(sess, c, database)
+				return ui.TeaHandler(sess, c, database, broadcaster)
 			}),
 			activeterm.Middleware(),
 		),

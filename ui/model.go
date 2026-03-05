@@ -22,40 +22,60 @@ const (
 	MinTerminalHeight = 25
 )
 
-// DefaultPlaceColour is used when placing a pixel (Phase 1; no faction yet).
 const DefaultPlaceColour = "#ff6b6b"
-
-// defaultCellColour is used when the shared canvas is not available (e.g. before wiring).
 const defaultCellColour = "#cccccc"
 
-type Model struct {
-	width      int
-	height     int
-	isTooSmall bool
-	renderer   *lipgloss.Renderer
-	keyMap     KeyMap
-	canvasRef  *canvas.Canvas
-	db         *sql.DB
-	cursor     Cursor
+type CanvasUpdateMsg struct {
+	Pixel canvas.Pixel
 }
 
-func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB) (tea.Model, []tea.ProgramOption) {
+type Model struct {
+	width          int
+	height         int
+	isTooSmall     bool
+	renderer       *lipgloss.Renderer
+	keyMap         KeyMap
+	canvasRef      *canvas.Canvas
+	db             *sql.DB
+	cursor         Cursor
+	canvasUpdateCh <-chan canvas.Pixel
+	unsub          func()
+}
+
+func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Broadcaster) (tea.Model, []tea.ProgramOption) {
 	pty, _, _ := s.Pty()
 	renderer := bubbletea.MakeRenderer(s)
+	canvasUpdateCh, unsub := bc.Subscribe()
+
 	m := Model{
-		width:     pty.Window.Width,
-		height:    pty.Window.Height,
-		renderer:  renderer,
-		keyMap:    DefaultKeyMap,
-		canvasRef: c,
-		db:        database,
-		cursor:    DefaultCursor,
+		width:          pty.Window.Width,
+		height:         pty.Window.Height,
+		renderer:       renderer,
+		keyMap:         DefaultKeyMap,
+		canvasRef:      c,
+		db:             database,
+		cursor:         DefaultCursor,
+		canvasUpdateCh: canvasUpdateCh,
+		unsub:          unsub,
 	}
 	return m, []tea.ProgramOption{tea.WithAltScreen()}
 }
 
+func waitForCanvasUpdate(ch <-chan canvas.Pixel) tea.Cmd {
+	return func() tea.Msg {
+		p, ok := <-ch
+		if !ok {
+			return nil
+		}
+		return CanvasUpdateMsg{Pixel: p}
+	}
+}
+
 func (m Model) Init() tea.Cmd {
-	return nil
+	if m.canvasUpdateCh == nil {
+		return nil
+	}
+	return waitForCanvasUpdate(m.canvasUpdateCh)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -68,6 +88,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.isTooSmall = false
 		}
+	case CanvasUpdateMsg:
+		return m, waitForCanvasUpdate(m.canvasUpdateCh)
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keyMap.Up):
@@ -83,6 +105,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				_ = m.canvasRef.Set(context.Background(), m.db, m.cursor.X, m.cursor.Y, DefaultPlaceColour)
 			}
 		case key.Matches(msg, m.keyMap.Quit):
+			if m.unsub != nil {
+				m.unsub()
+			}
 			return m, tea.Quit
 		}
 
