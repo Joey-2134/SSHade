@@ -176,11 +176,22 @@ func (m Model) View() string {
 			b.WriteString("\n")
 		}
 	}
-	gridStr := b.String() // after your existing loops
+	var headerStyle = lipgloss.NewStyle().
+		Border(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color("15"))
+
+	headerCell1 := headerStyle.Render("SSHade")
+	headerCell2 := headerStyle.Render("USERNAME PLACEHOLDER")
+	headerCell3 := headerStyle.Render("f choose faction")
+	headerCell4 := headerStyle.Render("s settings")
+
+	header := lipgloss.JoinHorizontal(lipgloss.Center, headerCell1, headerCell2, headerCell3, headerCell4)
+	gridStr := b.String()
+	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr)
 	styled := m.renderer.NewStyle().
 		PaddingLeft(max(leftPad, 0)).
 		PaddingTop(max(topLines, 0)).
-		Render(gridStr)
+		Render(fullView)
 	return styled
 }
 
