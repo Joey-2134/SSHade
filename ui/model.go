@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	lipglosstable "github.com/charmbracelet/lipgloss/table"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish/bubbletea"
 	gocrypto "golang.org/x/crypto/ssh"
@@ -176,16 +177,30 @@ func (m Model) View() string {
 			b.WriteString("\n")
 		}
 	}
-	var headerStyle = lipgloss.NewStyle().
+
+	username := ""
+	if m.user != nil {
+		username = m.user.Username
+	}
+	headers := []string{"SSHade", "f faction", "s settings", username}
+	maxCellWidth := 0
+	for _, h := range headers {
+		if w := lipgloss.Width(h); w > maxCellWidth {
+			maxCellWidth = w
+		}
+	}
+
+	headerCellWidth := maxCellWidth + 2
+	headerTable := lipglosstable.New().
 		Border(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("15"))
+		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("15"))).
+		BorderHeader(false).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			return lipgloss.NewStyle().Padding(0, 1).Width(headerCellWidth).Align(lipgloss.Center)
+		}).
+		Headers(headers[0], headers[1], headers[2], headers[3])
 
-	headerCell1 := headerStyle.Render("SSHade")
-	headerCell2 := headerStyle.Render("USERNAME PLACEHOLDER")
-	headerCell3 := headerStyle.Render("f choose faction")
-	headerCell4 := headerStyle.Render("s settings")
-
-	header := lipgloss.JoinHorizontal(lipgloss.Center, headerCell1, headerCell2, headerCell3, headerCell4)
+	header := headerTable.String()
 	gridStr := b.String()
 	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr)
 	styled := m.renderer.NewStyle().
