@@ -20,6 +20,7 @@ import (
 
 const DefaultPlaceColour = "#ff6b6b"
 const defaultCellColour = "#cccccc"
+const gridSize = constants.GridSize
 
 type CanvasUpdateMsg struct {
 	Pixel canvas.Pixel
@@ -122,12 +123,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Wrap cursor around canvas edges
-		w, h := constants.CanvasWidth, constants.CanvasHeight
-		if m.canvasRef != nil {
-			w, h = m.canvasRef.Width(), m.canvasRef.Height()
-		}
-		m.cursor.X = ((m.cursor.X % w) + w) % w
-		m.cursor.Y = ((m.cursor.Y % h) + h) % h
+		m.cursor.X = ((m.cursor.X % gridSize) + gridSize) % gridSize
+		m.cursor.Y = ((m.cursor.Y % gridSize) + gridSize) % gridSize
 	default:
 		return m, nil
 	}
@@ -135,42 +132,36 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	if m.isTooSmall {
-		return fmt.Sprintf("Terminal too small.\nPlease resize to at least %dx%d.\n\nPress Q to quit.", constants.MinTerminalWidth, constants.MinTerminalHeight)
-	}
-
-	canvasWidth, canvasHeight := constants.CanvasWidth, constants.CanvasHeight
-	if m.canvasRef != nil {
-		canvasWidth, canvasHeight = m.canvasRef.Width(), m.canvasRef.Height()
-	}
-
-	// Calculate the scale factor for the canvas
-	scaleByWidth := m.width / canvasWidth
-	scaleByHeight := 2 * (m.height / canvasHeight)
-	// Calculate the cell width and lines per row
-	cellWidth := max(min(scaleByWidth, scaleByHeight), 1)
-	linesPerRow := max(cellWidth/2, 1)
-	// Calculate the left padding and top lines
-	leftPad := (m.width - canvasWidth*cellWidth) / 2
-	topLines := (m.height - canvasHeight*linesPerRow) / 2
-
-	//draw the canvas
-	gridStr := components.Grid(
-		m.width, m.height,
-		canvasWidth, canvasHeight,
-		m.renderer,
-		m.canvasRef,
-		m.cursor.X, m.cursor.Y,
-		defaultCellColour,
-	)
-
 	username := ""
 	if m.user != nil {
 		username = m.user.Username
 	}
 
 	header := components.Header(username)
+
+	if m.isTooSmall {
+		return fmt.Sprintf("Terminal too small.\nPlease resize to at least %dx%d.\n\nPress Q to quit.", constants.MinTerminalWidth, constants.MinTerminalHeight)
+	}
+
+	// Reserve space for header so grid scales to fit remaining area
+	headerHeight := lipgloss.Height(header)
+	availableHeight := m.height - headerHeight
+
+	// Draw the canvas
+	gridStr := components.Grid(
+		m.width, availableHeight,
+		m.renderer,
+		m.canvasRef,
+		m.cursor.X, m.cursor.Y,
+		defaultCellColour,
+	)
+
 	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr)
+	fullViewWidth := lipgloss.Width(fullView)
+	fullViewHeight := lipgloss.Height(fullView)
+	leftPad := (m.width - fullViewWidth) / 2
+	topLines := (m.height - fullViewHeight) / 2
+
 	styled := m.renderer.NewStyle().
 		PaddingLeft(max(leftPad, 0)).
 		PaddingTop(max(topLines, 0)).

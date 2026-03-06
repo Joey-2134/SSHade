@@ -44,7 +44,7 @@ func main() {
 	}
 	defer database.Close()
 
-	c := canvas.New(constants.CanvasWidth, constants.CanvasHeight)
+	c := canvas.New(constants.GridSize, constants.GridSize)
 	if err := c.LoadFromDB(context.Background(), database); err != nil {
 		log.Fatal("Failed to load canvas from DB", "error", err)
 	}
