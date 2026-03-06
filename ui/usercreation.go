@@ -4,6 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/Joey-2134/SSHade/canvas"
+	"github.com/Joey-2134/SSHade/constants"
 	"github.com/Joey-2134/SSHade/db"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -56,9 +57,9 @@ func (m UserCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, DefaultKeyMap.Quit):
+		case key.Matches(msg, constants.DefaultKeyMap.Quit):
 			return m, tea.Quit
-		case key.Matches(msg, DefaultKeyMap.Enter):
+		case key.Matches(msg, constants.DefaultKeyMap.Enter):
 			user, err := db.CreateUser(m.database, m.textInput.Value(), m.fingerprint)
 			if err != nil {
 				return m, tea.Batch(tea.Println("Error creating user"), tea.Quit)
@@ -70,7 +71,7 @@ func (m UserCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				width:          pty.Window.Width,
 				height:         pty.Window.Height,
 				renderer:       m.renderer,
-				keyMap:         DefaultKeyMap,
+				keyMap:         constants.DefaultKeyMap,
 				canvasRef:      m.canvas,
 				db:             m.database,
 				cursor:         DefaultCursor,

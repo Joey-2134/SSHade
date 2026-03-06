@@ -20,6 +20,7 @@ import (
 	"github.com/charmbracelet/wish/logging"
 
 	"github.com/Joey-2134/SSHade/canvas"
+	"github.com/Joey-2134/SSHade/constants"
 	"github.com/Joey-2134/SSHade/db"
 	"github.com/Joey-2134/SSHade/ui"
 )
@@ -43,7 +44,7 @@ func main() {
 	}
 	defer database.Close()
 
-	c := canvas.New(ui.CanvasWidth, ui.CanvasHeight)
+	c := canvas.New(constants.CanvasWidth, constants.CanvasHeight)
 	if err := c.LoadFromDB(context.Background(), database); err != nil {
 		log.Fatal("Failed to load canvas from DB", "error", err)
 	}
@@ -54,7 +55,7 @@ func main() {
 		wish.WithAddress(net.JoinHostPort(host, port)),
 		wish.WithHostKeyPath(".ssh/id_ed25519"),
 		wish.WithBannerHandler(func(ctx ssh.Context) string {
-			return fmt.Sprint(banner)
+			return fmt.Sprintf("%s", banner)
 		}),
 		wish.WithPublicKeyAuth(func(ctx ssh.Context, key ssh.PublicKey) bool {
 			return true
