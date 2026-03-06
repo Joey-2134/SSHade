@@ -147,7 +147,7 @@ func (m Model) View() string {
 	headerHeight := lipgloss.Height(header)
 	availableHeight := m.height - headerHeight
 
-	// Draw the canvas
+	// Draw the grid
 	gridStr := components.Grid(
 		m.width, availableHeight,
 		m.renderer,
@@ -156,7 +156,7 @@ func (m Model) View() string {
 		defaultCellColour,
 	)
 
-	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr)
+	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr, components.Footer(lipgloss.Width(header)))
 	fullViewWidth := lipgloss.Width(fullView)
 	fullViewHeight := lipgloss.Height(fullView)
 	leftPad := (m.width - fullViewWidth) / 2
