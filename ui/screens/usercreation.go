@@ -78,6 +78,7 @@ func (m UserCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				canvasUpdateCh: canvasUpdateCh,
 				unsub:          unsub,
 				user:           user,
+				session:        m.session,
 			}, waitForCanvasUpdate(canvasUpdateCh)
 		}
 	}

@@ -16,6 +16,17 @@ import (
 	"github.com/charmbracelet/wish/bubbletea"
 )
 
+type errModel struct{ msg string }
+
+func (e errModel) Init() tea.Cmd { return nil }
+func (e errModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if _, ok := msg.(tea.KeyMsg); ok {
+		return e, tea.Quit
+	}
+	return e, nil
+}
+func (e errModel) View() string { return e.msg }
+
 var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder())
 
@@ -58,6 +69,9 @@ type FactionSelectionModel struct {
 }
 
 func FactionSelectionModelHandler(sess ssh.Session, database *sql.DB, user *db.User, fingerprint string, c *canvas.Canvas, bc *canvas.Broadcaster, width, height int) tea.Model {
+	if sess == nil {
+		return errModel{msg: "session is nil"}
+	}
 	renderer := bubbletea.MakeRenderer(sess)
 	factions, _ := db.GetAllFactions(context.Background(), database)
 	rows := make([]table.Row, len(factions))
@@ -116,14 +130,18 @@ func (m FactionSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, constants.DefaultKeyMap.Quit):
 			return m, tea.Quit
 		case key.Matches(msg, constants.DefaultKeyMap.Enter):
-			db.UpdateUserFaction(m.database, m.user.ID, m.factions[m.selectedFaction].ID)
-			m, _ := TeaHandler(m.session, m.canvas, m.database, m.broadcaster)
-			return m, nil
+			if len(m.factions) > 0 {
+				db.UpdateUserFaction(m.database, m.user.ID, m.factions[m.selectedFaction].ID)
+			}
+			mainModel, _ := TeaHandler(m.session, m.canvas, m.database, m.broadcaster)
+			return mainModel, nil
 		default:
 			var cmd tea.Cmd
 			m.table, cmd = m.table.Update(msg)
 			m.selectedFaction = m.table.Cursor()
-			m.table.SetStyles(tableStylesWithHeaderColor(m.factions[m.selectedFaction].ColourHex))
+			if len(m.factions) > 0 && m.selectedFaction < len(m.factions) {
+				m.table.SetStyles(tableStylesWithHeaderColor(m.factions[m.selectedFaction].ColourHex))
+			}
 			return m, cmd
 		}
 	}
