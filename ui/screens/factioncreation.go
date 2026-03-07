@@ -28,9 +28,11 @@ type FactionCreationModel struct {
 	colourInput textinput.Model
 	focus       int // 0 = name, 1 = colour
 	err         string
+	width       int
+	height      int
 }
 
-func FactionCreationModelHandler(sess ssh.Session, database *sql.DB, fingerprint string, c *canvas.Canvas, bc *canvas.Broadcaster) tea.Model {
+func FactionCreationModelHandler(sess ssh.Session, database *sql.DB, fingerprint string, c *canvas.Canvas, bc *canvas.Broadcaster, width, height int) tea.Model {
 	renderer := bubbletea.MakeRenderer(sess)
 
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
@@ -62,6 +64,8 @@ func FactionCreationModelHandler(sess ssh.Session, database *sql.DB, fingerprint
 		nameInput:   nameInput,
 		colourInput: colourInput,
 		focus:       0,
+		width:       width,
+		height:      height,
 	}
 }
 
@@ -73,10 +77,14 @@ func (m FactionCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		return m, nil
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, constants.DefaultKeyMap.Quit):
-			return FactionSelectionModelHandler(m.session, m.database, m.fingerprint, m.canvas, m.broadcaster), nil
+			return FactionSelectionModelHandler(m.session, m.database, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
 		case key.Matches(msg, constants.DefaultKeyMap.Enter):
 			if m.focus == 0 {
 				m.nameInput.Blur()
@@ -103,7 +111,7 @@ func (m FactionCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = err.Error()
 				return m, nil
 			}
-			return FactionSelectionModelHandler(m.session, m.database, m.fingerprint, m.canvas, m.broadcaster), nil
+			return FactionSelectionModelHandler(m.session, m.database, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
 		}
 	}
 

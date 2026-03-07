@@ -125,7 +125,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Quit
 		case key.Matches(msg, m.keyMap.FactionSelection):
-			return FactionSelectionModelHandler(m.session, m.db, m.user.Fingerprint, m.canvasRef, m.broadcaster), nil
+			return FactionSelectionModelHandler(m.session, m.db, m.user.Fingerprint, m.canvasRef, m.broadcaster, m.width, m.height), nil
 		}
 
 		// Wrap cursor around canvas edges
