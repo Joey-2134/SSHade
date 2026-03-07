@@ -30,9 +30,10 @@ type FactionCreationModel struct {
 	err         string
 	width       int
 	height      int
+	user        *db.User
 }
 
-func FactionCreationModelHandler(sess ssh.Session, database *sql.DB, fingerprint string, c *canvas.Canvas, bc *canvas.Broadcaster, width, height int) tea.Model {
+func FactionCreationModelHandler(sess ssh.Session, database *sql.DB, user *db.User, fingerprint string, c *canvas.Canvas, bc *canvas.Broadcaster, width, height int) tea.Model {
 	renderer := bubbletea.MakeRenderer(sess)
 
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
@@ -66,6 +67,7 @@ func FactionCreationModelHandler(sess ssh.Session, database *sql.DB, fingerprint
 		focus:       0,
 		width:       width,
 		height:      height,
+		user:        user,
 	}
 }
 
@@ -84,7 +86,7 @@ func (m FactionCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, constants.DefaultKeyMap.Quit):
-			return FactionSelectionModelHandler(m.session, m.database, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
+			return FactionSelectionModelHandler(m.session, m.database, m.user, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
 		case key.Matches(msg, constants.DefaultKeyMap.Enter):
 			if m.focus == 0 {
 				m.nameInput.Blur()
@@ -111,7 +113,7 @@ func (m FactionCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.err = err.Error()
 				return m, nil
 			}
-			return FactionSelectionModelHandler(m.session, m.database, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
+			return FactionSelectionModelHandler(m.session, m.database, m.user, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
 		}
 	}
 

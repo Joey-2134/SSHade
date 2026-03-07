@@ -54,9 +54,10 @@ type FactionSelectionModel struct {
 	table           table.Model
 	width           int
 	height          int
+	user            *db.User
 }
 
-func FactionSelectionModelHandler(sess ssh.Session, database *sql.DB, fingerprint string, c *canvas.Canvas, bc *canvas.Broadcaster, width, height int) tea.Model {
+func FactionSelectionModelHandler(sess ssh.Session, database *sql.DB, user *db.User, fingerprint string, c *canvas.Canvas, bc *canvas.Broadcaster, width, height int) tea.Model {
 	renderer := bubbletea.MakeRenderer(sess)
 	factions, _ := db.GetAllFactions(context.Background(), database)
 	rows := make([]table.Row, len(factions))
@@ -94,6 +95,7 @@ func FactionSelectionModelHandler(sess ssh.Session, database *sql.DB, fingerprin
 		table:           factionTable,
 		width:           width,
 		height:          height,
+		user:            user,
 	}
 }
 
@@ -110,14 +112,13 @@ func (m FactionSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, constants.DefaultKeyMap.FactionCreation):
-			return FactionCreationModelHandler(m.session, m.database, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
+			return FactionCreationModelHandler(m.session, m.database, m.user, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
 		case key.Matches(msg, constants.DefaultKeyMap.Quit):
 			return m, tea.Quit
 		case key.Matches(msg, constants.DefaultKeyMap.Enter):
-			return m, tea.Batch(
-				tea.Printf("Selected faction: %s", m.factions[m.selectedFaction].Name),
-				tea.Quit,
-			)
+			db.UpdateUserFaction(m.database, m.user.ID, m.factions[m.selectedFaction].ID)
+			m, _ := TeaHandler(m.session, m.canvas, m.database, m.broadcaster)
+			return m, nil
 		default:
 			var cmd tea.Cmd
 			m.table, cmd = m.table.Update(msg)

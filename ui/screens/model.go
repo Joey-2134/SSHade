@@ -125,7 +125,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Quit
 		case key.Matches(msg, m.keyMap.FactionSelection):
-			return FactionSelectionModelHandler(m.session, m.db, m.user.Fingerprint, m.canvasRef, m.broadcaster, m.width, m.height), nil
+			return FactionSelectionModelHandler(m.session, m.db, m.user, m.user.Fingerprint, m.canvasRef, m.broadcaster, m.width, m.height), nil
 		}
 
 		// Wrap cursor around canvas edges
@@ -143,7 +143,17 @@ func (m Model) View() string {
 		username = m.user.Username
 	}
 
-	header := components.Header(username)
+	factionname := ""
+	if m.user != nil && m.user.FactionID.Valid {
+		faction, err := db.GetFactionByID(context.Background(), m.db, int(m.user.FactionID.Int64))
+		if err != nil {
+			factionname = ""
+		} else {
+			factionname = faction.Name
+		}
+	}
+
+	header := components.Header(username, factionname)
 
 	if m.isTooSmall {
 		return fmt.Sprintf("Terminal too small.\nPlease resize to at least %dx%d.\n\nPress Q to quit.", constants.MinTerminalWidth, constants.MinTerminalHeight)
