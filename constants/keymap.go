@@ -13,6 +13,7 @@ type KeyMap struct {
 	Quit             key.Binding
 	Enter            key.Binding
 	FactionSelection key.Binding
+	FactionCreation  key.Binding
 }
 
 var DefaultKeyMap = KeyMap{
@@ -47,5 +48,9 @@ var DefaultKeyMap = KeyMap{
 	FactionSelection: key.NewBinding(
 		key.WithKeys("f"),
 		key.WithHelp("f", "faction selection"),
+	),
+	FactionCreation: key.NewBinding(
+		key.WithKeys("c"),
+		key.WithHelp("c", "create faction"),
 	),
 }

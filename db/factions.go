@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 )
 
 type Faction struct {
@@ -57,4 +58,12 @@ func CreateFaction(ctx context.Context, db *sql.DB, name string, colourHex strin
 		return Faction{}, err
 	}
 	return GetFactionByID(ctx, db, int(id))
+}
+
+func (f Faction) String() string {
+	return fmt.Sprintf("%s (%s)", f.Name, f.ColourHex)
+}
+
+func (f Faction) GetFactionName() string {
+	return f.Name
 }
