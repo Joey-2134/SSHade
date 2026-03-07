@@ -2,7 +2,7 @@
 
 ## Concept
 
-A multiplayer pixel canvas accessible entirely over SSH. Users connect, see the current state of a shared canvas rendered in their terminal, choose a faction, and place one pixel at a time subject to a cooldown. The canvas is persistent and shared across all connected users in real time.
+A multiplayer pixel canvas accessible entirely over SSH. Users connect, see the current state of a shared canvas on a fixed 20×20 grid rendered in their terminal, choose a faction, and place one pixel at a time subject to a cooldown. The canvas is persistent and shared across all connected users in real time.
 
 Inspired by Reddit's r/place and Primagen's Terminal.shop. The goal is a polished, absurd, fully committed SSH-native experience.
 
@@ -28,17 +28,11 @@ Milestone: Two terminal windows SSH'd into localhost, placing a pixel in one imm
 - Faction colours and territory tracking
 - Cooldown enforcement per user stored in SQLite
 - Leaderboard showing faction territory percentages
+- Scheduled resets (e.g. daily/weekly) that clear or snapshot the 20×20 grid
 
-### Phase 3 - Maps and Resets
-- Custom shaped canvases (world map, country outlines) instead of open grid
-- Map rotation on a configurable schedule (daily/weekly reset)
-- Historical snapshots saved on each reset
-- Canvas replay mode - scrub through the edit history of a session
-
-### Phase 4 - Stretch
+### Phase 3 - Stretch
 - Cooldown economy (earn credits over time, spend to place rectangles or protect regions)
 - Procedural server events (voids, challenges, bonus windows)
-- Web viewer for the canvas (read-only, for people without a terminal)
 
 ## Architecture Notes
 
@@ -46,7 +40,7 @@ Milestone: Two terminal windows SSH'd into localhost, placing a pixel in one imm
 Each SSH connection gets its own bubbletea program instance. Session state (username, faction, last placement time) is loaded from SQLite on connect. The bubbletea model handles input and renders the canvas for that session.
 
 ### Canvas State
-Canvas is a 2D array of pixels stored in memory as the source of truth, persisted to SQLite. On server start, load canvas from SQLite into memory. All reads serve from memory. All writes go to memory first then async to SQLite.
+Canvas is a fixed 20×20 grid of pixels stored in memory as the source of truth, persisted to SQLite. On server start, load canvas from SQLite into memory. All reads serve from memory. All writes go to memory first then async to SQLite.
 
 ### Real Time Updates
 Use a central broadcaster - a Go channel or simple pub/sub - that all active sessions subscribe to. When any user places a pixel, the change is pushed to the broadcaster which fans it out to every connected session, triggering a re-render.
@@ -56,7 +50,7 @@ Canvas writes must be mutex-protected. Two simultaneous placements at the same c
 
 ## Key Implementation Concerns
 
-**Terminal size variance** - Query terminal dimensions on connect using wish/bubbletea hooks. Handle resize events. Define a minimum canvas display size and show a clear error if the terminal is too small rather than rendering garbage.
+**Terminal size variance** - The canvas is always 20×20. Query terminal dimensions on connect using wish/bubbletea hooks. Handle resize events. Ensure the terminal is large enough to display the grid and show a clear error if it is too small rather than rendering garbage.
 
 **Colour depth variance** - Not all terminals support 24-bit colour. Decide on a minimum (256 colour is a reasonable baseline) and document it. Lipgloss handles colour fallback to some degree but test on multiple terminals.
 
@@ -129,20 +123,8 @@ ssh-canvas/
 │   ├── canvas_view.go    # Canvas rendering logic
 │   ├── faction_view.go   # Faction selection screen
 │   └── hud.go            # Cooldown timer, faction info overlay
-├── config/
-│   └── config.go         # Canvas size, cooldown duration, port etc
 └── go.mod
 ```
-
-## Configuration (config.go)
-
-Make these values configurable from the start rather than hardcoded:
-- Canvas width and height
-- Cooldown duration per placement
-- SSH listen port
-- SQLite file path
-- Max connections per IP
-- Faction definitions (name + colour)
 
 ## Development Order
 
@@ -156,8 +138,6 @@ Make these values configurable from the start rather than hardcoded:
 8. Cooldown - enforce and display remaining time
 9. Faction selection screen
 10. Faction territory tracking and leaderboard
-
-Do not move to phase 2 features until step 6 is working solidly.
 
 ## References
 
