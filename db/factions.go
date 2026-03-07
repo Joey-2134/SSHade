@@ -45,16 +45,15 @@ func CreateFaction(ctx context.Context, db *sql.DB, name string, colourHex strin
 		return Faction{}, err
 	}
 	defer tx.Rollback()
-	_, err = tx.ExecContext(ctx, "INSERT INTO factions (name, colour_hex) VALUES (?, ?)", name, colourHex)
-	if err != nil {
-		return Faction{}, err
-	}
 	result, err := tx.ExecContext(ctx, "INSERT INTO factions (name, colour_hex) VALUES (?, ?)", name, colourHex)
 	if err != nil {
 		return Faction{}, err
 	}
 	id, err := result.LastInsertId()
 	if err != nil {
+		return Faction{}, err
+	}
+	if err := tx.Commit(); err != nil {
 		return Faction{}, err
 	}
 	return GetFactionByID(ctx, db, int(id))

@@ -27,6 +27,7 @@ type FactionSelectionModel struct {
 
 func FactionSelectionModelHandler(sess ssh.Session, database *sql.DB, fingerprint string, c *canvas.Canvas, bc *canvas.Broadcaster) tea.Model {
 	renderer := bubbletea.MakeRenderer(sess)
+	factions, _ := db.GetAllFactions(context.Background(), database)
 
 	return FactionSelectionModel{
 		renderer:    renderer,
@@ -35,16 +36,11 @@ func FactionSelectionModelHandler(sess ssh.Session, database *sql.DB, fingerprin
 		fingerprint: fingerprint,
 		canvas:      c,
 		broadcaster: bc,
-		factions:    []db.Faction{},
+		factions:    factions,
 	}
 }
 
 func (m FactionSelectionModel) Init() tea.Cmd {
-	factions, err := db.GetAllFactions(context.Background(), m.database)
-	if err != nil {
-		return nil
-	}
-	m.factions = factions
 	return nil
 }
 
@@ -66,9 +62,10 @@ func (m FactionSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m FactionSelectionModel) View() string {
 
 	if len(m.factions) == 0 {
-		return "No factions found, press c to create a new faction"
+		return "No factions found, press c to create a new faction" //TODO replace with styled component
 	}
 
+	//TODO replace with styled table component
 	names := make([]string, 0, len(m.factions))
 	for _, f := range m.factions {
 		names = append(names, f.Name)
