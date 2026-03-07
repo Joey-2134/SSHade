@@ -22,7 +22,7 @@ import (
 	"github.com/Joey-2134/SSHade/canvas"
 	"github.com/Joey-2134/SSHade/constants"
 	"github.com/Joey-2134/SSHade/db"
-	"github.com/Joey-2134/SSHade/ui"
+	ui "github.com/Joey-2134/SSHade/ui/screens"
 )
 
 const (

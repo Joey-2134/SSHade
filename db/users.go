@@ -32,3 +32,13 @@ func CreateUser(db *sql.DB, username string, fingerprint string) (*User, error) 
 	_, err = stmt.Exec(username, fingerprint)
 	return &User{Username: username, Fingerprint: fingerprint}, nil
 }
+
+func UpdateUserFaction(db *sql.DB, userID int, factionID int) error {
+	stmt, err := db.Prepare("UPDATE users SET faction_id = ? WHERE id = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(factionID, userID)
+	return err
+}

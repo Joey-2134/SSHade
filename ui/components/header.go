@@ -5,7 +5,7 @@ import (
 	lipglosstable "github.com/charmbracelet/lipgloss/table"
 )
 
-var headers = []string{"SSHade", "f faction", "s settings"}
+var headers = []string{"SSHade", "f faction", "o options"}
 
 func getHeaderCellWidth(username string) int {
 	maxCellWidth := 0

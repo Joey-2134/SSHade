@@ -13,7 +13,6 @@ func Footer(width int, cooldownTimer string) string {
 	cooldownMsg := "cooldown: " + cooldownTimer
 
 	footerInfoString := quitMsg + strings.Repeat(" ", width-quitMsgWidth-lipgloss.Width(cooldownMsg)) + cooldownMsg
-
 	footerInfo := lipgloss.NewStyle().Render(footerInfoString)
 
 	return lipgloss.JoinVertical(lipgloss.Center, line, footerInfo)
