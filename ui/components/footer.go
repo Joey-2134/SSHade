@@ -6,8 +6,15 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func Footer(width int) string {
+func Footer(width int, cooldownTimer string) string {
 	line := lipgloss.NewStyle().Render(strings.Repeat("─", width))
-	footerInfo := lipgloss.NewStyle().Render("q quit")
+	quitMsg := "q quit"
+	quitMsgWidth := lipgloss.Width(quitMsg)
+	cooldownMsg := "cooldown: " + cooldownTimer
+
+	footerInfoString := quitMsg + strings.Repeat(" ", width-quitMsgWidth-lipgloss.Width(cooldownMsg)) + cooldownMsg
+
+	footerInfo := lipgloss.NewStyle().Render(footerInfoString)
+
 	return lipgloss.JoinVertical(lipgloss.Center, line, footerInfo)
 }
