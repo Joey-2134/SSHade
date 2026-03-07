@@ -38,6 +38,8 @@ type Model struct {
 	canvasUpdateCh <-chan canvas.Pixel
 	unsub          func()
 	user           *db.User
+	session        ssh.Session
+	broadcaster    *canvas.Broadcaster
 }
 
 func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Broadcaster) (tea.Model, []tea.ProgramOption) {
@@ -68,6 +70,8 @@ func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Br
 		canvasUpdateCh: canvasUpdateCh,
 		unsub:          unsub,
 		user:           user,
+		session:        s,
+		broadcaster:    bc,
 	}
 	return m, opts
 }
@@ -120,6 +124,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.unsub()
 			}
 			return m, tea.Quit
+		case key.Matches(msg, m.keyMap.FactionSelection):
+			return FactionSelectionModelHandler(m.session, m.db, m.user.Fingerprint, m.canvasRef, m.broadcaster), nil
 		}
 
 		// Wrap cursor around canvas edges

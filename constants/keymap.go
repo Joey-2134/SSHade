@@ -5,13 +5,14 @@ import (
 )
 
 type KeyMap struct {
-	Up    key.Binding
-	Down  key.Binding
-	Left  key.Binding
-	Right key.Binding
-	Place key.Binding
-	Quit  key.Binding
-	Enter key.Binding
+	Up               key.Binding
+	Down             key.Binding
+	Left             key.Binding
+	Right            key.Binding
+	Place            key.Binding
+	Quit             key.Binding
+	Enter            key.Binding
+	FactionSelection key.Binding
 }
 
 var DefaultKeyMap = KeyMap{
@@ -42,5 +43,9 @@ var DefaultKeyMap = KeyMap{
 	Enter: key.NewBinding(
 		key.WithKeys("enter"),
 		key.WithHelp("enter", "enter"),
+	),
+	FactionSelection: key.NewBinding(
+		key.WithKeys("f"),
+		key.WithHelp("f", "faction selection"),
 	),
 }
