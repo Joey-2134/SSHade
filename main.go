@@ -8,8 +8,11 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
+
+	gocrypto "golang.org/x/crypto/ssh"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/log"
@@ -32,10 +35,11 @@ const (
 
 //go:embed banner.txt
 var banner string
-var users = map[string]string{
-	"notjoey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIst2WyjFbYpwCoyDwKNe46cLYIoh76ZBq1Q5zvuLb74 joey@Joeys-MacBook-Air.local",
-	"joeypc":  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB1mkr8Tr0+/LZ1yOWOj7Wqu68jjXY+LWOIdSnzlhzk2 joeyg@Joeys-PC",
-}
+
+var (
+	activeSessions = make(map[string]struct{})
+	activeMu       sync.Mutex
+)
 
 func main() {
 	database, err := db.Open(db.DefaultPath)
@@ -61,27 +65,12 @@ func main() {
 			return true
 		}),
 		wish.WithMiddleware(
-			func(next ssh.Handler) ssh.Handler {
-				return func(sess ssh.Session) {
-					for name, pubkey := range users {
-						parsed, _, _, _, _ := ssh.ParseAuthorizedKey(
-							[]byte(pubkey),
-						)
-						if ssh.KeysEqual(sess.PublicKey(), parsed) {
-							wish.Println(sess, fmt.Sprintf("Hey %s!\n", name))
-							next(sess)
-							return
-						}
-					}
-					wish.Println(sess, "Hey, I don't know who you are!")
-					next(sess)
-				}
-			},
 			logging.Middleware(),
 			bubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
 				return ui.TeaHandler(sess, c, database, broadcaster)
 			}),
 			activeterm.Middleware(),
+			oneSessionPerFingerprintMiddleware,
 		),
 	)
 	if err != nil {
@@ -107,5 +96,31 @@ func main() {
 	log.Info("Stopping SSH server")
 	if err := srv.Shutdown(ctx); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
 		log.Error("Could not stop server", "error", err)
+	}
+}
+
+func oneSessionPerFingerprintMiddleware(next ssh.Handler) ssh.Handler {
+	return func(sess ssh.Session) {
+		fingerprint := ""
+		if pk := sess.PublicKey(); pk != nil {
+			fingerprint = gocrypto.FingerprintSHA256(pk)
+		}
+
+		activeMu.Lock()
+		if _, ok := activeSessions[fingerprint]; ok {
+			activeMu.Unlock()
+			wish.Fatalln(sess, "You already have an active session. Only one session per SSH key is allowed.")
+			return
+		}
+		activeSessions[fingerprint] = struct{}{}
+		activeMu.Unlock()
+
+		defer func() {
+			activeMu.Lock()
+			delete(activeSessions, fingerprint)
+			activeMu.Unlock()
+		}()
+
+		next(sess)
 	}
 }
