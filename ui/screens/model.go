@@ -116,17 +116,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keyMap.Right):
 			m.cursor.X++
 		case key.Matches(msg, m.keyMap.Place):
-			colour := DefaultPlaceColour
-			if m.user != nil && m.user.FactionID.Valid {
-				faction, err := db.GetFactionByID(context.Background(), m.db, int(m.user.FactionID.Int64))
-				if err == nil {
-					colour = faction.ColourHex
-				}
+			if m.user == nil || !m.user.FactionID.Valid || m.canvasRef == nil || m.db == nil {
+				break
 			}
 
-			if m.canvasRef != nil && m.db != nil {
-				_ = m.canvasRef.Set(context.Background(), m.db, m.cursor.X, m.cursor.Y, colour)
+			faction, err := db.GetFactionByID(context.Background(), m.db, int(m.user.FactionID.Int64))
+			if err != nil {
+				break
 			}
+
+			colour := faction.ColourHex
+			_ = m.canvasRef.Set(context.Background(), m.db, m.cursor.X, m.cursor.Y, colour)
 		case key.Matches(msg, m.keyMap.Quit):
 			if m.unsub != nil {
 				m.unsub()
