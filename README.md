@@ -70,6 +70,34 @@ Then in another terminal:
 ssh localhost -p 2222
 ```
 
+## Deploying to ECS (GitHub Actions)
+
+Pushes to `main` trigger an automatic build and deploy: the workflow builds the Docker image, pushes it to Amazon ECR, and updates the ECS service.
+
+### One-time setup
+
+1. **ECR repository**  
+   Create a repository (e.g. `sshade`) in ECR. Your ECS task definition should reference this image (e.g. `{account}.dkr.ecr.{region}.amazonaws.com/sshade:latest`).
+
+2. **GitHub OIDC and IAM role**  
+   - In **AWS IAM** → Identity providers, add an OIDC provider: `https://token.actions.githubusercontent.com` (no thumbprint, audience `sts.amazonaws.com`).  
+   - Create an IAM role that trusts `token.actions.githubusercontent.com` with a condition on your repo (e.g. `repo:YourOrg/SSHade`).  
+   - Attach policies (or inline policy) that allow:
+     - **ECR**: `GetAuthorizationToken`; and for the repo resource, `BatchCheckLayerAvailability`, `GetDownloadUrlForLayer`, `BatchGetImage`, `PutImage`, `InitiateLayerUpload`, `UploadLayerPart`, `CompleteLayerUpload`.  
+     - **ECS**: `ecs:UpdateService`, `ecs:DescribeServices`, and (if the role is used to register/update task definitions) `ecs:RegisterTaskDefinition`, `ecs:DescribeTaskDefinition`, `iam:PassRole` for the task execution role.  
+   - Copy the role ARN (e.g. `arn:aws:iam::123456789012:role/github-actions-ecs`).
+
+3. **GitHub repo configuration**  
+   In the repo: **Settings → Secrets and variables → Actions**:
+   - **Secrets**: add `AWS_ROLE_ARN` = the IAM role ARN from step 2.  
+   - **Variables**: add  
+     - `AWS_REGION` (e.g. `us-east-1`)  
+     - `ECR_REPOSITORY` (e.g. `sshade`)  
+     - `ECS_CLUSTER` (your ECS cluster name)  
+     - `ECS_SERVICE` (your ECS service name)
+
+After this, every push to `main` deploys the new image. You can also run the workflow manually from the **Actions** tab (“Deploy to ECS” → “Run workflow”).
+
 ## Configuration
 
 All values are configurable in `config/config.go`:

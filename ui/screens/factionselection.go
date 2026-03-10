@@ -27,9 +27,6 @@ func (e errModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 func (e errModel) View() string { return e.msg }
 
-var baseStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.NormalBorder())
-
 func normalizeHex(hex string) string {
 	if hex == "" {
 		return "#240"
@@ -40,16 +37,16 @@ func normalizeHex(hex string) string {
 	return hex
 }
 
-func tableStylesWithHeaderColor(hex string) table.Styles {
+func tableStylesWithHeaderColor(r *lipgloss.Renderer, hex string) table.Styles {
 	colour := lipgloss.Color(normalizeHex(hex))
 	style := table.DefaultStyles()
-	style.Header = style.Header.
+	style.Header = r.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(colour).
 		BorderBottom(true).
 		Bold(false).
 		Foreground(colour)
-	style.Selected = style.Selected.Bold(true)
+	style.Selected = r.NewStyle().Bold(true)
 	return style
 }
 
@@ -95,7 +92,7 @@ func FactionSelectionModelHandler(sess ssh.Session, database *sql.DB, user *db.U
 	if len(factions) > 0 && factions[0].ColourHex != "" {
 		headerHex = normalizeHex(factions[0].ColourHex)
 	}
-	factionTable.SetStyles(tableStylesWithHeaderColor(headerHex))
+	factionTable.SetStyles(tableStylesWithHeaderColor(renderer, headerHex))
 
 	return FactionSelectionModel{
 		renderer:        renderer,
@@ -140,7 +137,7 @@ func (m FactionSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.table, cmd = m.table.Update(msg)
 			m.selectedFaction = m.table.Cursor()
 			if len(m.factions) > 0 && m.selectedFaction < len(m.factions) {
-				m.table.SetStyles(tableStylesWithHeaderColor(m.factions[m.selectedFaction].ColourHex))
+				m.table.SetStyles(tableStylesWithHeaderColor(m.renderer, m.factions[m.selectedFaction].ColourHex))
 			}
 			return m, cmd
 		}
@@ -155,7 +152,9 @@ func (m FactionSelectionModel) View() string {
 	}
 
 	hex := normalizeHex(m.factions[m.selectedFaction].ColourHex)
-	borderStyle := baseStyle.BorderForeground(lipgloss.Color(hex))
+	borderStyle := m.renderer.NewStyle().
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color(hex))
 	tableContent := borderStyle.Render(m.table.View())
 
 	// Center the table in the terminal

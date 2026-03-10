@@ -29,8 +29,10 @@ import (
 )
 
 const (
-	host = "localhost"
-	port = "22"
+	defaultHost        = "0.0.0.0"
+	defaultPort        = "2222"
+	defaultDBPath      = db.DefaultPath
+	defaultHostKeyPath = ".ssh/id_ed25519"
 )
 
 //go:embed banner.txt
@@ -42,7 +44,12 @@ var (
 )
 
 func main() {
-	database, err := db.Open(db.DefaultPath)
+	host := getenvOrDefault("SSHADE_HOST", defaultHost)
+	port := getenvOrDefault("SSHADE_PORT", defaultPort)
+	dbPath := getenvOrDefault("SSHADE_DB_PATH", defaultDBPath)
+	hostKeyPath := getenvOrDefault("SSHADE_HOST_KEY_PATH", defaultHostKeyPath)
+
+	database, err := db.Open(dbPath)
 	if err != nil {
 		log.Fatal("Failed to open database", "error", err)
 	}
@@ -57,7 +64,7 @@ func main() {
 
 	srv, err := wish.NewServer(
 		wish.WithAddress(net.JoinHostPort(host, port)),
-		wish.WithHostKeyPath(".ssh/id_ed25519"),
+		wish.WithHostKeyPath(hostKeyPath),
 		wish.WithBannerHandler(func(ctx ssh.Context) string {
 			return fmt.Sprintf("%s", banner)
 		}),
@@ -97,6 +104,13 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil && !errors.Is(err, ssh.ErrServerClosed) {
 		log.Error("Could not stop server", "error", err)
 	}
+}
+
+func getenvOrDefault(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }
 
 func oneSessionPerFingerprintMiddleware(next ssh.Handler) ssh.Handler {
