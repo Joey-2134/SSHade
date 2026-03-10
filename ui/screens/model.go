@@ -180,7 +180,7 @@ func (m Model) View() string {
 		defaultCellColour,
 	)
 
-	cooldownTimer := "10s"
+	cooldownTimer := "n/a"
 	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr, components.Footer(lipgloss.Width(header), cooldownTimer))
 	fullViewWidth := lipgloss.Width(fullView)
 	fullViewHeight := lipgloss.Height(fullView)
