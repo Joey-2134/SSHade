@@ -151,20 +151,27 @@ func (m Model) View() string {
 		username = m.user.Username
 	}
 
-	factionname := ""
+	var faction db.Faction
 	if m.user != nil && m.user.FactionID.Valid {
-		faction, err := db.GetFactionByID(context.Background(), m.db, int(m.user.FactionID.Int64))
+		var err error
+		faction, err = db.GetFactionByID(context.Background(), m.db, int(m.user.FactionID.Int64))
 		if err != nil {
-			factionname = ""
-		} else {
-			factionname = faction.Name
+			faction = db.Faction{}
 		}
 	}
 
-	header := components.Header(username, factionname)
+	factionName := ""
+	factionColour := ""
+	if faction.ID != 0 {
+		factionName = faction.Name
+		factionColour = faction.ColourHex
+	}
+
+	header := components.Header(username, factionName, factionColour)
 
 	if m.isTooSmall {
-		return fmt.Sprintf("Terminal too small.\nPlease resize to at least %dx%d.\n\nPress Q to quit.", constants.MinTerminalWidth, constants.MinTerminalHeight)
+		return fmt.Sprintf("Terminal too small.\nPlease resize to at least %dx%d.\n\nPress Q to quit.",
+			constants.MinTerminalWidth, constants.MinTerminalHeight)
 	}
 
 	// Reserve space for header so grid scales to fit remaining area
@@ -177,11 +184,12 @@ func (m Model) View() string {
 		m.renderer,
 		m.canvasRef,
 		m.cursor.X, m.cursor.Y,
-		defaultCellColour,
 	)
 
 	cooldownTimer := "n/a"
-	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr, components.Footer(lipgloss.Width(header), cooldownTimer))
+	footer := components.Footer(lipgloss.Width(header), cooldownTimer, factionColour)
+
+	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr, footer)
 	fullViewWidth := lipgloss.Width(fullView)
 	fullViewHeight := lipgloss.Height(fullView)
 	leftPad := (m.width - fullViewWidth) / 2

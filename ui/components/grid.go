@@ -14,7 +14,6 @@ func Grid(
 	renderer *lipgloss.Renderer,
 	canvasRef *canvas.Canvas,
 	cursorX, cursorY int,
-	defaultCellColour string,
 ) string {
 	var b strings.Builder
 
@@ -26,7 +25,7 @@ func Grid(
 	for y := range constants.GridSize {
 		for range linesPerRow {
 			for x := range constants.GridSize {
-				colour := defaultCellColour
+				var colour string
 				if canvasRef != nil {
 					if p, ok := canvasRef.PixelAt(x, y); ok {
 						colour = p.ColourHex

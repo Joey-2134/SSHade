@@ -23,7 +23,7 @@ func getHeaderCellWidth(username string) int {
 	return maxCellWidth + 2
 }
 
-func Header(username string, factionname string) string {
+func Header(username string, factionname string, factioncolour string) string {
 	userDisplay := username
 	if userDisplay == "" {
 		userDisplay = "—"
@@ -38,7 +38,7 @@ func Header(username string, factionname string) string {
 
 	headerTable := lipglosstable.New().
 		Border(lipgloss.NormalBorder()).
-		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("15"))).
+		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color(factioncolour))).
 		BorderHeader(false).
 		StyleFunc(func(row, col int) lipgloss.Style {
 			return lipgloss.NewStyle().Padding(0, 1).Width(getHeaderCellWidth(userDisplay)).Align(lipgloss.Center)
