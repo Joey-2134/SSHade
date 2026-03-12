@@ -73,7 +73,7 @@ func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Br
 		session:        s,
 		broadcaster:    bc,
 	}
-	return m, opts
+	return NewSplashModel(m, pty.Window.Width, pty.Window.Height, renderer), opts
 }
 
 func waitForCanvasUpdate(ch <-chan canvas.Pixel) tea.Cmd {
