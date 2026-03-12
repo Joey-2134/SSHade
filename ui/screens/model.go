@@ -42,7 +42,7 @@ type Model struct {
 	broadcaster    *canvas.Broadcaster
 }
 
-func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Broadcaster) (tea.Model, []tea.ProgramOption) {
+func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Broadcaster, showSplash bool) (tea.Model, []tea.ProgramOption) {
 	pty, _, _ := s.Pty()
 	renderer := bubbletea.MakeRenderer(s)
 	opts := []tea.ProgramOption{tea.WithAltScreen()}
@@ -73,7 +73,10 @@ func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Br
 		session:        s,
 		broadcaster:    bc,
 	}
-	return NewSplashModel(m, pty.Window.Width, pty.Window.Height, renderer), opts
+	if showSplash {
+		return NewSplashModel(m, pty.Window.Width, pty.Window.Height, renderer), opts
+	}
+	return m, opts
 }
 
 func waitForCanvasUpdate(ch <-chan canvas.Pixel) tea.Cmd {

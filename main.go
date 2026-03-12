@@ -74,7 +74,7 @@ func main() {
 		wish.WithMiddleware(
 			logging.Middleware(),
 			bubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
-				return ui.TeaHandler(sess, c, database, broadcaster)
+				return ui.TeaHandler(sess, c, database, broadcaster, true)
 			}),
 			activeterm.Middleware(),
 			oneSessionPerFingerprintMiddleware,

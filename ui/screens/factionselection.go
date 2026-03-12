@@ -47,6 +47,7 @@ func tableStylesWithHeaderColor(r *lipgloss.Renderer, hex string) table.Styles {
 		BorderBottom(true).
 		Bold(false).
 		Foreground(colour)
+	style.Cell = r.NewStyle().Padding(0, 0)
 	style.Selected = r.NewStyle().Bold(true)
 	return style
 }
@@ -77,16 +78,25 @@ func FactionSelectionModelHandler(sess ssh.Session, database *sql.DB, user *db.U
 		rows[idx] = table.Row{strconv.Itoa(idx), f.Name, f.ColourHex}
 	}
 
+	const (
+		idxColWidth    = 5
+		nameColWidth   = 10
+		colourColWidth = 10
+	)
+
 	columns := []table.Column{
-		{Title: "Idx", Width: 5},
-		{Title: "Name", Width: 10},
-		{Title: "Colour", Width: 10},
+		{Title: "Idx", Width: idxColWidth},
+		{Title: "Name", Width: nameColWidth},
+		{Title: "Colour", Width: colourColWidth},
 	}
+
+	factionTableWidth := idxColWidth + nameColWidth + colourColWidth
 
 	factionTable := table.New(
 		table.WithRows(rows),
 		table.WithColumns(columns),
 		table.WithFocused(true),
+		table.WithWidth(factionTableWidth),
 	)
 
 	headerHex := "240"
@@ -131,7 +141,7 @@ func (m FactionSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(m.factions) > 0 {
 				db.UpdateUserFaction(m.database, m.user.ID, m.factions[m.selectedFaction].ID)
 			}
-			mainModel, _ := TeaHandler(m.session, m.canvas, m.database, m.broadcaster)
+			mainModel, _ := TeaHandler(m.session, m.canvas, m.database, m.broadcaster, false)
 			return mainModel, nil
 		default:
 			var cmd tea.Cmd
