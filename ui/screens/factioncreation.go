@@ -39,7 +39,7 @@ func FactionCreationModelHandler(sess ssh.Session, database *sql.DB, user *db.Us
 	style := lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
 
 	nameInput := textinput.New()
-	nameInput.Placeholder = "Faction name"
+	// Leave Placeholder empty to avoid OSC 11 / terminal color report leaking into the field over SSH.
 	nameInput.Focus()
 	nameInput.CharLimit = 32
 	nameInput.Width = 32
@@ -126,6 +126,13 @@ func (m FactionCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m FactionCreationModel) View() string {
-	accentHex := "99" // cyan, matches EmptyFactionsView when no faction
-	return components.FactionCreationForm(m.renderer, m.width, m.height, accentHex, m.nameInput.View(), m.colourInput.View(), m.err)
+	accentHex := "99"
+	nameView := m.nameInput.View()
+	if m.nameInput.Value() == "" {
+		// Render our own hint to avoid built-in placeholder triggering OSC 11 over SSH.
+		nameView = m.nameInput.PromptStyle.Render(m.nameInput.Prompt) +
+			m.nameInput.PlaceholderStyle.Render("Faction name") +
+			m.nameInput.Cursor.Style.Render(" ")
+	}
+	return components.FactionCreationForm(m.renderer, m.width, m.height, accentHex, nameView, m.colourInput.View(), m.err)
 }
