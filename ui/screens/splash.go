@@ -12,18 +12,18 @@ const splashDuration = 2 * time.Second
 type SplashDoneMsg struct{}
 
 type SplashModel struct {
-	canvasModel Model
-	width       int
-	height      int
-	renderer    *lipgloss.Renderer
+	next     tea.Model
+	width    int
+	height   int
+	renderer *lipgloss.Renderer
 }
 
-func NewSplashModel(canvas Model, width, height int, renderer *lipgloss.Renderer) SplashModel {
+func NewSplashModel(next tea.Model, width, height int, renderer *lipgloss.Renderer) SplashModel {
 	return SplashModel{
-		canvasModel: canvas,
-		width:       width,
-		height:      height,
-		renderer:    renderer,
+		next:     next,
+		width:    width,
+		height:   height,
+		renderer: renderer,
 	}
 }
 
@@ -36,12 +36,10 @@ func (m SplashModel) Init() tea.Cmd {
 func (m SplashModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case SplashDoneMsg:
-		return m.canvasModel, m.canvasModel.Init()
+		return m.next, m.next.Init()
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.canvasModel.width = msg.Width
-		m.canvasModel.height = msg.Height
 		return m, nil
 	}
 	return m, nil

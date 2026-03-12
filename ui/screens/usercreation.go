@@ -64,10 +64,9 @@ func (m UserCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return m, tea.Batch(tea.Println("Error creating user"), tea.Quit)
 			}
-			// Transition to canvas model
 			canvasUpdateCh, unsub := m.broadcaster.Subscribe()
 			pty, _, _ := m.session.Pty()
-			return Model{
+			canvasModel := Model{
 				width:          pty.Window.Width,
 				height:         pty.Window.Height,
 				renderer:       m.renderer,
@@ -80,7 +79,9 @@ func (m UserCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				user:           user,
 				session:        m.session,
 				broadcaster:    m.broadcaster,
-			}, waitForCanvasUpdate(canvasUpdateCh)
+			}
+			splash := NewSplashModel(canvasModel, pty.Window.Width, pty.Window.Height, m.renderer)
+			return splash, splash.Init()
 		}
 	}
 

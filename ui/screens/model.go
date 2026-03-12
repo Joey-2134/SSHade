@@ -54,8 +54,8 @@ func TeaHandler(s ssh.Session, c *canvas.Canvas, database *sql.DB, bc *canvas.Br
 
 	user, err := db.GetUserByFingerprint(database, fingerprint)
 	if err != nil || user == nil {
-		// New user → show username creation screen
-		return UserCreationModelHandler(s, database, fingerprint, c, bc), opts
+		userCreation := UserCreationModelHandler(s, database, fingerprint, c, bc)
+		return NewSplashModel(userCreation, pty.Window.Width, pty.Window.Height, renderer), opts
 	}
 
 	canvasUpdateCh, unsub := bc.Subscribe()
