@@ -135,7 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.unsub()
 			}
 			return m, tea.Quit
-		case key.Matches(msg, m.keyMap.FactionSelection):
+		case key.Matches(msg, m.keyMap.FactionSelection) || matchesRuneIgnoreCase(msg, 'f'):
 			return FactionSelectionModelHandler(m.session, m.db, m.user, m.user.Fingerprint, m.canvasRef, m.broadcaster, m.width, m.height), nil
 		}
 

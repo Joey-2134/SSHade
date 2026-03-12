@@ -57,9 +57,9 @@ func (m UserCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, constants.DefaultKeyMap.Quit):
+		case key.Matches(msg, constants.DefaultKeyMap.Quit) || matchesRuneIgnoreCase(msg, 'q'):
 			return m, tea.Quit
-		case key.Matches(msg, constants.DefaultKeyMap.Enter):
+		case matchesEnter(msg, constants.DefaultKeyMap.Enter):
 			user, err := db.CreateUser(m.database, m.textInput.Value(), m.fingerprint)
 			if err != nil {
 				return m, tea.Batch(tea.Println("Error creating user"), tea.Quit)

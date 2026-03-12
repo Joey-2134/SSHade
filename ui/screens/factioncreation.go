@@ -85,9 +85,9 @@ func (m FactionCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyMsg:
 		switch {
-		case key.Matches(msg, constants.DefaultKeyMap.Quit):
+		case key.Matches(msg, constants.DefaultKeyMap.Quit) || matchesRuneIgnoreCase(msg, 'q'):
 			return FactionSelectionModelHandler(m.session, m.database, m.user, m.fingerprint, m.canvas, m.broadcaster, m.width, m.height), nil
-		case key.Matches(msg, constants.DefaultKeyMap.Enter):
+		case matchesEnter(msg, constants.DefaultKeyMap.Enter):
 			if m.focus == 0 {
 				m.nameInput.Blur()
 				m.colourInput.Focus()
