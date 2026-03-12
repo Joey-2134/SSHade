@@ -2,6 +2,10 @@
 
 A multiplayer pixel canvas accessible entirely over SSH. Connect, join a faction, and place pixels on a shared canvas that updates in real time for every connected user. No browser. No app. Just a terminal.
 
+<p>
+    <img src="image.png" width="100%" alt="Bubble Tea Example">
+</p>
+
 This was a personal project made with the aim of learning to make ssh programs and styled terminal UI's and at the same time experiment with Cursor AI.
 
 Inspired by [r/place](https://reddit.com/r/place) and [Terminal.shop](https://terminal.shop).
@@ -56,7 +60,6 @@ SSHade/
 │   ├── users.go               # User queries
 │   ├── pixels.go              # Canvas persistence queries
 │   ├── factions.go            # Faction queries
-│   └── migrations/
 ├── ui/
 │   ├── components/            # Reusable UI pieces
 │   │   ├── header.go
