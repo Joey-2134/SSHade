@@ -8,6 +8,7 @@ import (
 	"github.com/Joey-2134/SSHade/canvas"
 	"github.com/Joey-2134/SSHade/constants"
 	"github.com/Joey-2134/SSHade/db"
+	"github.com/Joey-2134/SSHade/ui/components"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -148,7 +149,7 @@ func (m FactionSelectionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m FactionSelectionModel) View() string {
 
 	if len(m.factions) == 0 {
-		return "No factions found, press c to create a new faction" //TODO replace with styled component
+		return components.EmptyFactionsView(m.renderer, m.width, m.height)
 	}
 
 	hex := normalizeHex(m.factions[m.selectedFaction].ColourHex)
