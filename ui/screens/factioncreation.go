@@ -48,7 +48,7 @@ func FactionCreationModelHandler(sess ssh.Session, database *sql.DB, user *db.Us
 	nameInput.PlaceholderStyle = style
 
 	colourInput := textinput.New()
-	colourInput.Placeholder = "#rrggbb (e.g. #ff0000)"
+	colourInput.Placeholder = "#rrggbb"
 	colourInput.CharLimit = 7
 	colourInput.Width = 32
 	colourInput.PromptStyle = style
@@ -126,7 +126,6 @@ func (m FactionCreationModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m FactionCreationModel) View() string {
-	return m.renderer.NewStyle().Render(
-		components.FactionCreationForm(m.nameInput.View(), m.colourInput.View(), m.err),
-	)
+	accentHex := "99" // cyan, matches EmptyFactionsView when no faction
+	return components.FactionCreationForm(m.renderer, m.width, m.height, accentHex, m.nameInput.View(), m.colourInput.View(), m.err)
 }
