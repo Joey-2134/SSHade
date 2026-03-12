@@ -168,11 +168,21 @@ func (m FactionSelectionModel) View() string {
 		BorderForeground(lipgloss.Color(hex))
 	tableContent := borderStyle.Render(m.table.View())
 
-	// Center the table in the terminal
-	tableWidth := lipgloss.Width(tableContent)
-	tableHeight := lipgloss.Height(tableContent)
-	leftPad := (m.width - tableWidth) / 2
-	topPad := (m.height - tableHeight) / 2
+	// Keybind hint: c to create faction (match empty state styling)
+	muted := lipgloss.Color("241")
+	keyFg := lipgloss.Color("205")
+	keyStyle := m.renderer.NewStyle().Foreground(keyFg).Bold(true)
+	hintStyle := m.renderer.NewStyle().Foreground(muted)
+	cKey := keyStyle.Render("c")
+	hint := hintStyle.Render("Press ") + cKey + hintStyle.Render(" to create a new faction")
+
+	block := lipgloss.JoinVertical(lipgloss.Center, tableContent, "", hint)
+
+	// Center the block in the terminal
+	blockWidth := lipgloss.Width(block)
+	blockHeight := lipgloss.Height(block)
+	leftPad := (m.width - blockWidth) / 2
+	topPad := (m.height - blockHeight) / 2
 	if leftPad < 0 {
 		leftPad = 0
 	}
@@ -183,5 +193,5 @@ func (m FactionSelectionModel) View() string {
 	return m.renderer.NewStyle().
 		PaddingLeft(leftPad).
 		PaddingTop(topPad).
-		Render(tableContent)
+		Render(block)
 }
