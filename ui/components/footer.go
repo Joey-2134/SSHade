@@ -6,14 +6,14 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-func Footer(width int, cooldownTimer string, factioncolour string) string {
+const githubLink = "https://github.com/Joey-2134"
+const quitMsg = "q quit"
+
+func Footer(width int, factioncolour string) string {
 	line := lipgloss.NewStyle().Foreground(lipgloss.Color(factioncolour)).Render(strings.Repeat("─", width))
-	quitMsg := "q quit"
 	quitMsgWidth := lipgloss.Width(quitMsg)
-	cooldownMsg := "cooldown: " + cooldownTimer
 
-	footerInfoString := quitMsg + strings.Repeat(" ", width-quitMsgWidth-lipgloss.Width(cooldownMsg)) + cooldownMsg
+	footerInfoString := quitMsg + strings.Repeat(" ", width-quitMsgWidth-lipgloss.Width(githubLink)) + githubLink
 	footerInfo := lipgloss.NewStyle().Foreground(lipgloss.Color(factioncolour)).Render(footerInfoString)
-
 	return lipgloss.JoinVertical(lipgloss.Center, line, footerInfo)
 }

@@ -186,8 +186,7 @@ func (m Model) View() string {
 		m.cursor.X, m.cursor.Y,
 	)
 
-	cooldownTimer := "n/a"
-	footer := components.Footer(lipgloss.Width(header), cooldownTimer, factionColour)
+	footer := components.Footer(lipgloss.Width(header), factionColour)
 
 	fullView := lipgloss.JoinVertical(lipgloss.Center, header, gridStr, footer)
 	fullViewWidth := lipgloss.Width(fullView)
